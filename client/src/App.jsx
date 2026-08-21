@@ -1,122 +1,114 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useCallback } from "react";
+import MarketplaceHeader from "./modules/marketplace/components/MarketplaceHeader";
+import Toast from "./modules/marketplace/components/Toast";
+import ProductPage from "./modules/marketplace/pages/productpage";
+import CartPage from "./modules/marketplace/pages/cartpage";
+import WishlistPage from "./modules/marketplace/pages/whislistpage";
+import { useProducts } from "./modules/marketplace/hooks/useproducts";
+import { useCart } from "./modules/marketplace/hooks/usecart";
+import { useWishlist } from "./modules/marketplace/hooks/usewhislist";
+import "./modules/marketplace/marketplace.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeView, setActiveView] = useState("catalogue"); // 'catalogue' | 'cart' | 'wishlist'
+  const [toasts, setToasts] = useState([]);
+
+  // Initialize hooks
+  const productsHook = useProducts();
+  const rawCartHook = useCart();
+  const rawWishlistHook = useWishlist();
+
+  // Toast notification helper
+  const addToast = useCallback((message, icon = "🌿", type = "success") => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, icon, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3200);
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Enhanced Cart Actions with Toast Feedback
+  const handleAddToCart = useCallback(
+    (product, qty = 1) => {
+      rawCartHook.addToCart(product, qty);
+      addToast(
+        `Added ${qty} × "${product.name}" to your apothecary cart!`,
+        "🛒",
+        "success"
+      );
+    },
+    [rawCartHook, addToast]
+  );
+
+  const cartHook = {
+    ...rawCartHook,
+    addToCart: handleAddToCart
+  };
+
+  // Enhanced Wishlist Actions with Toast Feedback
+  const handleToggleWishlist = useCallback(
+    (product) => {
+      const wasWishlisted = rawWishlistHook.isWishlisted(product.id);
+      rawWishlistHook.toggleWishlist(product);
+      if (wasWishlisted) {
+        addToast(`Removed "${product.name}" from your wishlist.`, "🤍", "warning");
+      } else {
+        addToast(`Saved "${product.name}" to your sacred wishlist!`, "❤️", "success");
+      }
+    },
+    [rawWishlistHook, addToast]
+  );
+
+  const wishlistHook = {
+    ...rawWishlistHook,
+    toggleWishlist: handleToggleWishlist
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="nurova-marketplace-app">
+      {/* Claymorphic Marketplace Top Navigation */}
+      <MarketplaceHeader
+        activeView={activeView}
+        onSelectView={setActiveView}
+        cartCount={cartHook.totals.totalCount}
+        cartTotal={cartHook.totals.grandTotal}
+        wishlistCount={wishlistHook.wishlistCount}
+      />
 
-      <div className="ticks"></div>
+      {/* Dynamic Module Views */}
+      {activeView === "catalogue" && (
+        <ProductPage
+          productsHook={productsHook}
+          cartHook={cartHook}
+          wishlistHook={wishlistHook}
+          onNavigateToCart={() => setActiveView("cart")}
+        />
+      )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {activeView === "cart" && (
+        <CartPage
+          cartHook={cartHook}
+          wishlistHook={wishlistHook}
+          onNavigateToShop={() => setActiveView("catalogue")}
+        />
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {activeView === "wishlist" && (
+        <WishlistPage
+          wishlistHook={wishlistHook}
+          cartHook={cartHook}
+          onNavigateToShop={() => setActiveView("catalogue")}
+        />
+      )}
+
+      {/* Floating Claymorphic Toast Feedback */}
+      <Toast toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  );
 }
 
-export default App
+export default App;
