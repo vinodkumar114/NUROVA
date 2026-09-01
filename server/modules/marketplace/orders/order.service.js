@@ -3,33 +3,69 @@ const Product = require("../products/product.model");
 
 // Create a new order
 const createOrder = async (userId, productId, quantity) => {
-  const product = await Product.findById(productId);
+  // Atomically check stock and decrease it.
+  // This prevents two orders from buying the same stock simultaneously.
+  const product = await Product.findOneAndUpdate(
+    {
+      _id: productId,
+      stock: { $gte: quantity },
+    },
+    {
+      $inc: { stock: -quantity },
+    },
+    {
+      new: true,
+    }
+  );
+  console.log("STOCK AFTER ORDER:", product.stock);
 
+  // Product does not exist
   if (!product) {
-    throw new Error("Product not found");
-  }
+    const existingProduct = await Product.findById(productId);
 
-  if (product.stock < quantity) {
+    if (!existingProduct) {
+      throw new Error("Product not found");
+    }
+
+    // Product exists but doesn't have enough stock
     throw new Error("Insufficient product stock");
   }
 
+  // Calculate order total using the price at the time of purchase
   const totalAmount = product.price * quantity;
 
-  const order = await Order.create({
-    userId,
-    productId,
-    quantity,
-    totalAmount,
-  });
+  try {
+    // Create the order
+    const order = await Order.create({
+      userId,
+      productId,
+      quantity,
+      totalAmount,
+    });
 
-  return await Order.findById(order._id)
-    .populate("productId", "name description price category stock");
+    // Return the order with product information
+    return await Order.findById(order._id).populate(
+      "productId",
+      "name description price category stock"
+    );
+  } catch (error) {
+    // If creating the order fails after stock was decreased,
+    // restore the stock.
+    await Product.findByIdAndUpdate(productId, {
+      $inc: { stock: quantity },
+    });
+
+    throw error;
+  }
 };
 
 // Get all orders for a user
 const getUserOrders = async (userId) => {
   return await Order.find({ userId })
-    .populate("productId", "name description price category stock")
+    .populate(
+      "productId",
+      "name description price category stock"
+    )
     .sort({ orderDate: -1 });
 };
 
@@ -50,7 +86,10 @@ const updateOrderStatus = async (orderId, status) => {
       new: true,
       runValidators: true,
     }
-  ).populate("productId", "name description price category stock");
+  ).populate(
+    "productId",
+    "name description price category stock"
+  );
 
   return order;
 };
@@ -64,7 +103,10 @@ const cancelOrder = async (orderId) => {
       new: true,
       runValidators: true,
     }
-  ).populate("productId", "name description price category stock");
+  ).populate(
+    "productId",
+    "name description price category stock"
+  );
 
   return order;
 };

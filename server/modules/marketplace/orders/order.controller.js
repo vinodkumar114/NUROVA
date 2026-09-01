@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const orderService = require("./order.service");
 const validateOrder = require("./order.validation");
 
@@ -6,8 +7,15 @@ const createOrder = async (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
 
+    // For now, marketplace supports guest checkout.
+    // If no logged-in user exists, generate a valid MongoDB ObjectId.
+    const guestUserId =
+      userId && mongoose.Types.ObjectId.isValid(userId)
+        ? userId
+        : new mongoose.Types.ObjectId();
+
     const validation = validateOrder({
-      userId,
+      userId: guestUserId,
       productId,
       quantity,
     });
@@ -20,7 +28,7 @@ const createOrder = async (req, res) => {
     }
 
     const order = await orderService.createOrder(
-      userId,
+      guestUserId,
       productId,
       quantity
     );
@@ -43,7 +51,6 @@ const createOrder = async (req, res) => {
     });
   }
 };
-
 // GET /api/orders/user/:userId
 const getUserOrders = async (req, res) => {
   try {

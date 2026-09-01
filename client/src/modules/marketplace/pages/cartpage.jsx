@@ -78,9 +78,9 @@ export default function CartPage({
       <div className="clay-cart-layout">
         {/* Left: Cart Items */}
         <div className="clay-cart-items-column">
-          {cartItems.map((item) => (
-            <CartItem
-              key={item.id}
+          {cartItems.map((item, index) => (
+  <CartItem
+    key={item.id || item._id || `cart-item-${index}`}
               item={item}
               onUpdateQuantity={updateQuantity}
               onRemove={removeFromCart}

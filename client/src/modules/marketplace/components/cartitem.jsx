@@ -3,35 +3,86 @@ import React, { useState } from "react";
 export default function CartItem({
   item,
   onUpdateQuantity,
-  onRemove
+  onRemove,
 }) {
   const [imgError, setImgError] = useState(false);
-  const { id, name, price, quantity, icon, image, doshaLabel, categoryLabel } = item;
-  const itemTotal = (price * quantity).toLocaleString('en-IN');
+
+  if (!item) {
+    return null;
+  }
+
+  // Support both frontend id and MongoDB _id
+  const productId = item.id || item._id;
+
+  const {
+    name = "Ayurvedic Product",
+    price = 0,
+    quantity = 1,
+    icon = "🌿",
+    image = "",
+    doshaLabel = "",
+    categoryLabel = "",
+  } = item;
+
+  const numericPrice = Number(price) || 0;
+  const numericQuantity = Number(quantity) || 1;
+
+  const itemTotal = (
+    numericPrice * numericQuantity
+  ).toLocaleString("en-IN");
+
+  const handleDecrease = () => {
+    if (onUpdateQuantity && productId) {
+      onUpdateQuantity(productId, numericQuantity - 1);
+    }
+  };
+
+  const handleIncrease = () => {
+    if (onUpdateQuantity && productId) {
+      onUpdateQuantity(productId, numericQuantity + 1);
+    }
+  };
+
+  const handleRemove = () => {
+    if (onRemove && productId) {
+      onRemove(productId);
+    }
+  };
 
   return (
     <div className="clay-cart-item-card">
-      {/* Visual */}
+      {/* Product Image */}
       <div className="clay-cart-item-img">
         {image && !imgError ? (
           <img
             src={image}
             alt={name}
-            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "inherit",
+            }}
             onError={() => setImgError(true)}
           />
         ) : (
-          <span>{icon || "🌿"}</span>
+          <span>{icon}</span>
         )}
       </div>
 
-      {/* Details */}
+      {/* Product Details */}
       <div className="clay-cart-item-info">
         <h4>{name}</h4>
+
         <p>
-          {categoryLabel} • {doshaLabel || "Ayurvedic"}
+          {categoryLabel || "Ayurvedic"}{" "}
+          •{" "}
+          {doshaLabel || "Ayurvedic"}
         </p>
-        <span className="item-unit-price">₹{price.toLocaleString('en-IN')} each</span>
+
+        <span className="item-unit-price">
+          ₹{numericPrice.toLocaleString("en-IN")} each
+        </span>
       </div>
 
       {/* Quantity Stepper */}
@@ -39,30 +90,44 @@ export default function CartItem({
         <button
           type="button"
           className="clay-stepper-btn"
-          onClick={() => onUpdateQuantity(id, quantity - 1)}
-          aria-label="Decrease quantity"
+          onClick={handleDecrease}
+          aria-label={`Decrease quantity of ${name}`}
         >
           −
         </button>
-        <span className="clay-stepper-value">{quantity}</span>
+
+        <span className="clay-stepper-value">
+          {numericQuantity}
+        </span>
+
         <button
           type="button"
           className="clay-stepper-btn"
-          onClick={() => onUpdateQuantity(id, quantity + 1)}
-          aria-label="Increase quantity"
+          onClick={handleIncrease}
+          aria-label={`Increase quantity of ${name}`}
         >
           +
         </button>
       </div>
 
       {/* Subtotal & Remove */}
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-        <span className="clay-cart-item-total">₹{itemTotal}</span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+        }}
+      >
+        <span className="clay-cart-item-total">
+          ₹{itemTotal}
+        </span>
+
         <button
           type="button"
           className="clay-item-remove-btn"
-          onClick={() => onRemove(id)}
-          title="Remove from Cart"
+          onClick={handleRemove}
+          title={`Remove ${name} from Cart`}
+          aria-label={`Remove ${name} from Cart`}
         >
           🗑️
         </button>

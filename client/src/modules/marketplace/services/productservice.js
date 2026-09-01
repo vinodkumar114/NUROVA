@@ -2,7 +2,7 @@
 // NUROVA - MODULE C: 66 UNIQUE AUTHENTIC AYURVEDIC PRODUCTS CATALOGUE
 // (EVERY SINGLE PRODUCT HAS A DISTINCT, HIGH-QUALITY PHOTOGRAPH)
 // ==========================================================================
-
+const API_BASE_URL = "http://localhost:5000";
 export const AYURVEDIC_CATEGORIES = [
   { id: "all", name: "All Remedies", icon: "🌿" },
   { id: "herbal-supplements", name: "Herbal Supplements", icon: "🌱" },
@@ -1524,15 +1524,38 @@ export const productsData = [
 ];
 
 // Helper search & filter methods
-export const getProducts = () => {
-  return Promise.resolve(productsData);
+export const getProducts = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/products`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch products");
+  }
+
+  const result = await response.json();
+
+  return result.data;
 };
 
-export const getProductById = (id) => {
-  return productsData.find((item) => item.id === Number(id)) || null;
+export const getProductById = async (id) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/products/${id}`
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      return null;
+    }
+
+    throw new Error("Failed to fetch product");
+  }
+
+  const result = await response.json();
+
+  return result.data;
 };
 
 export const filterProducts = ({
+  products = [],
   category = "all",
   dosha = "all",
   benefit = "",
@@ -1541,19 +1564,23 @@ export const filterProducts = ({
   inStockOnly = false,
   priceMax = 5000
 }) => {
-  return productsData.filter((product) => {
+  return products.filter((product) => {
     // Category match
     if (category !== "all" && product.category !== category) {
       return false;
     }
 
     // Dosha match
-    if (dosha !== "all" && product.dosha !== dosha && product.dosha !== "tridoshic") {
+    if (
+      dosha !== "all" &&
+      product.dosha !== dosha &&
+      product.dosha !== "tridoshic"
+    ) {
       return false;
     }
 
     // Benefit match
-    if (benefit && !product.benefits.includes(benefit)) {
+    if (benefit && !product.benefits?.includes(benefit)) {
       return false;
     }
 
@@ -1567,13 +1594,24 @@ export const filterProducts = ({
       return false;
     }
 
-    // Search query matching name, description, ingredients, category
+    // Search query
     if (search.trim()) {
       const q = search.toLowerCase();
-      const matchName = product.name.toLowerCase().includes(q);
-      const matchDesc = product.description.toLowerCase().includes(q);
-      const matchIngr = product.ingredients && product.ingredients.some((ing) => ing.toLowerCase().includes(q));
-      const matchCat = product.categoryLabel.toLowerCase().includes(q);
+
+      const matchName =
+        product.name?.toLowerCase().includes(q);
+
+      const matchDesc =
+        product.description?.toLowerCase().includes(q);
+
+      const matchIngr =
+        product.ingredients?.some((ing) =>
+          ing.toLowerCase().includes(q)
+        );
+
+      const matchCat =
+        product.categoryLabel?.toLowerCase().includes(q);
+
       if (!matchName && !matchDesc && !matchIngr && !matchCat) {
         return false;
       }
@@ -1581,10 +1619,19 @@ export const filterProducts = ({
 
     return true;
   }).sort((a, b) => {
-    if (sortBy === "price-low") return a.price - b.price;
-    if (sortBy === "price-high") return b.price - a.price;
-    if (sortBy === "rating") return b.rating - a.rating;
-    return b.reviewCount - a.reviewCount; // popular default
+    if (sortBy === "price-low") {
+      return a.price - b.price;
+    }
+
+    if (sortBy === "price-high") {
+      return b.price - a.price;
+    }
+
+    if (sortBy === "rating") {
+      return (b.rating || 0) - (a.rating || 0);
+    }
+
+    return (b.reviewCount || 0) - (a.reviewCount || 0);
   });
 };
 

@@ -16,11 +16,14 @@ export default function ProductGrid({
     return (
       <div className="clay-empty-box">
         <div className="clay-empty-icon">🍃</div>
+
         <h3>No Ayurvedic Remedies Found</h3>
+
         <p>
-          We couldn't find any products matching your specific combination of filters
-          or search query. Try adjusting your selections.
+          We couldn't find any products matching your specific combination of
+          filters or search query. Try adjusting your selections.
         </p>
+
         {onResetFilters && (
           <button
             type="button"
@@ -40,31 +43,53 @@ export default function ProductGrid({
   return (
     <div>
       <div className="clay-products-grid">
-        {displayedProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onAddToCart={onAddToCart}
-            isInCart={isInCart(product.id)}
-            isWishlisted={isWishlisted(product.id)}
-            onToggleWishlist={onToggleWishlist}
-            onQuickView={onQuickView}
-          />
-        ))}
+        {displayedProducts.map((product) => {
+          // MongoDB uses _id
+          const productId = product._id;
+
+          return (
+            <ProductCard
+              key={productId}
+              product={product}
+              onAddToCart={onAddToCart}
+              isInCart={isInCart(productId)}
+              isWishlisted={isWishlisted(productId)}
+              onToggleWishlist={onToggleWishlist}
+              onQuickView={onQuickView}
+            />
+          );
+        })}
       </div>
 
       {remainingCount > 0 && (
-        <div style={{ textAlign: "center", margin: "2.5rem 0 1rem" }}>
+        <div
+          style={{
+            textAlign: "center",
+            margin: "2.5rem 0 1rem"
+          }}
+        >
           <button
             type="button"
             className="clay-action-btn primary-cart-btn"
             onClick={() => setVisibleCount((prev) => prev + 16)}
-            style={{ padding: "0.9rem 2.2rem", fontSize: "1rem" }}
+            style={{
+              padding: "0.9rem 2.2rem",
+              fontSize: "1rem"
+            }}
           >
             🌿 Load More Remedies ({remainingCount} more)
           </button>
-          <p style={{ marginTop: "0.6rem", fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Showing {displayedProducts.length} of {products.length} Authentic Ayurvedic Formulations
+
+          <p
+            style={{
+              marginTop: "0.6rem",
+              fontSize: "0.82rem",
+              color: "var(--text-muted)",
+              fontWeight: 600
+            }}
+          >
+            Showing {displayedProducts.length} of {products.length} Authentic
+            Ayurvedic Formulations
           </p>
         </div>
       )}
